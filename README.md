@@ -25,14 +25,17 @@ npm install
    `participants`, `item_assignments`.
 3. Buka **Project Settings -> API**, salin **Project URL** dan
    **anon public key**.
-4. Copy `.env.local.example` jadi `.env.local`, isi dua value itu:
+4. Buka [aistudio.google.com/apikey](https://aistudio.google.com/apikey),
+   bikin API key gratis buat fitur scan struk (pakai Gemini).
+5. Copy `.env.local.example` jadi `.env.local`, isi tiga value itu:
 
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   GEMINI_API_KEY=AIza...
    ```
 
-5. Jalanin:
+6. Jalanin:
 
    ```bash
    npm run dev
@@ -173,11 +176,30 @@ database sungguhan:
   refresh halaman -> pastikan datanya masih ada) sebagai sanity check
   terakhir.
 
+## Fitur scan struk (Gemini)
+
+Tombol **Scan Foto Struk** di layar pertama mengirim foto ke
+`app/api/receipts/scan/route.js`, yang meneruskannya ke Gemini
+(`gemini-1.5-flash`) dengan prompt yang minta output array JSON
+`[{"name": ..., "price": ...}]`. Hasilnya divalidasi dan disaring sebelum
+ditambahkan sebagai item baru — entri yang namanya kosong atau harganya
+bukan angka positif dibuang, bukan diloloskan ke summary.
+
+Butuh `GEMINI_API_KEY` di `.env.local` (lihat bagian Setup). Tanpa key ini,
+tombolnya tetap muncul tapi akan menampilkan pesan error yang jelas,
+bukan diam-diam gagal.
+
+Batasan yang disengaja untuk saat ini:
+- Ukuran foto dibatasi 8MB (dicek di client sebelum upload, dan di server
+  sebagai jaring pengaman kedua).
+- Kalau Gemini keliru baca angka atau salah pisah item, belum ada cara
+  koreksi selain hapus manual item yang salah lalu ketik ulang — belum ada
+  layar "review sebelum masuk" di antara scan dan daftar item.
+
 ## Belum ada (next steps)
 
-- Upload foto struk + ekstraksi otomatis lewat AI vision API (gantiin
-  input manual di layar pertama) — taruh di
-  `app/api/extract-receipt/route.js` sebagai Route Handler.
+- Layar review antara scan dan daftar item, biar salah baca AI bisa
+  dikoreksi sebelum ikut kehitung.
 - Autentikasi (Supabase Auth) supaya sesi terikat ke akun, bukan cuma
   "siapa pun yang pegang link".
 - Share hasil sebagai gambar, bukan cuma teks di clipboard.

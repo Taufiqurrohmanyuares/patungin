@@ -60,9 +60,17 @@ export default function PatunginApp({ receiptId, initialState }) {
   const [scanError, setScanError] = useState("");
   const fileInputRef = useRef(null);
 
+  const MAX_IMAGE_MB = 8;
+
   async function handleScanReceipt(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      setScanError(`Ukuran foto kegedean (maks ${MAX_IMAGE_MB}MB). Coba foto ulang atau kompres dulu.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     setIsScanning(true);
     setScanError("");
@@ -73,13 +81,16 @@ export default function PatunginApp({ receiptId, initialState }) {
       reader.readAsDataURL(file);
       await new Promise((resolve) => (reader.onload = resolve));
       
-      const res = await fetch("/api/scan", {
+      const res = await fetch("/api/receipts/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: reader.result }),
       });
 
-      if (!res.ok) throw new Error("Gagal memindai struk");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Gagal memindai struk.");
+      }
       
       const { data } = await res.json();
       
@@ -103,7 +114,7 @@ export default function PatunginApp({ receiptId, initialState }) {
         setScanError("AI tidak menemukan item pesanan di struk ini.");
       }
     } catch (err) {
-      setScanError("Koneksi gagal atau ukuran foto terlalu besar.");
+      setScanError(err.message || "Koneksi gagal, coba lagi.");
     } finally {
       setIsScanning(false);
       // Reset input agar bisa memindai file yang sama dua kali berturut-turut
