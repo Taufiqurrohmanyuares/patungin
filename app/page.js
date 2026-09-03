@@ -108,9 +108,6 @@ export default function HomePage() {
                 <a href="#cara-kerja">Cara kerja</a>
               </div>
             </div>
-            <button className="btn btn-primary" onClick={handleStart} disabled={loading}>
-              {loading ? "Menyiapkan..." : "Coba sekarang"}
-            </button>
           </nav>
 
           <div className="landing-hero">

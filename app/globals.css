@@ -590,7 +590,6 @@ input:focus-visible {
 }
 .landing-nav-links a:hover { color: var(--accent); }
 
-.landing-nav .btn { margin-left: auto; }
 
 .landing-hero {
   display: grid;
