@@ -344,6 +344,56 @@ input:focus-visible {
   font-weight: 500;
 }
 
+.charges label > span:first-child {
+  display: flex;
+  align-items: flex-start;
+  min-height: 32px;
+}
+
+.charge-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 32px;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 2px;
+}
+
+.mode-toggle-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-toggle-btn.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.mode-toggle-btn:hover:not(.active) { color: var(--text-primary); }
+
+.mode-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
 .unit-input {
   display: flex;
   align-items: center;

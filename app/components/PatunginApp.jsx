@@ -35,9 +35,14 @@ export default function PatunginApp({ receiptId, initialState }) {
   const [items, setItems] = useState(initialState?.items ?? []); 
   const [participants, setParticipants] = useState(initialState?.participants ?? []); 
   const [assignments, setAssignments] = useState(() => initialAssignmentsMap(initialState)); 
+  const [splitMode, setSplitMode] = useState(initialState?.splitMode ?? "itemized");
 
-  const [taxPercent, setTaxPercent] = useState(initialState?.taxPercent ?? 0);
-  const [servicePercent, setServicePercent] = useState(initialState?.servicePercent ?? 0);
+  const [taxMode, setTaxMode] = useState(initialState?.taxMode ?? "percent");
+  const [taxValue, setTaxValue] = useState(initialState?.taxValue ?? initialState?.taxPercent ?? 0);
+  const [serviceMode, setServiceMode] = useState(initialState?.serviceMode ?? "percent");
+  const [serviceValue, setServiceValue] = useState(
+    initialState?.serviceValue ?? initialState?.servicePercent ?? 0
+  );
   const [discountAmount, setDiscountAmount] = useState(initialState?.discountAmount ?? 0);
 
   const [itemNameInput, setItemNameInput] = useState("");
@@ -149,9 +154,12 @@ export default function PatunginApp({ receiptId, initialState }) {
         assignments: Object.entries(assignments).flatMap(([itemId, set]) =>
           [...set].map((participantId) => ({ itemId, participantId }))
         ),
-        taxPercent,
-        servicePercent,
+        taxMode,
+        taxValue,
+        serviceMode,
+        serviceValue,
         discountAmount,
+        splitMode,
       };
       
       try {
@@ -172,7 +180,7 @@ export default function PatunginApp({ receiptId, initialState }) {
     }, 800);
 
     return () => clearTimeout(timeout);
-  }, [items, participants, assignments, taxPercent, servicePercent, discountAmount, receiptId]);
+  }, [items, participants, assignments, taxMode, taxValue, serviceMode, serviceValue, discountAmount, splitMode, receiptId]);
 
   function handleCopyLink() {
     if (typeof window === "undefined") return;
@@ -255,8 +263,8 @@ export default function PatunginApp({ receiptId, initialState }) {
 
   // ---------- Split calculation ----------
   const { results, grandTotal } = useMemo(
-    () => calculateSplit({ items, participants, assignments, taxPercent, servicePercent, discountAmount }),
-    [items, participants, assignments, taxPercent, servicePercent, discountAmount]
+    () => calculateSplit({ items, participants, assignments, splitMode, taxMode, taxValue, serviceMode, serviceValue, discountAmount }),
+    [items, participants, assignments, splitMode, taxMode, taxValue, serviceMode, serviceValue, discountAmount]
   );
 
   async function handleCopySummary() {
@@ -326,8 +334,10 @@ export default function PatunginApp({ receiptId, initialState }) {
             itemNameInput={itemNameInput}
             itemPriceInput={itemPriceInput}
             itemError={itemError}
-            taxPercent={taxPercent}
-            servicePercent={servicePercent}
+            taxMode={taxMode}
+            taxValue={taxValue}
+            serviceMode={serviceMode}
+            serviceValue={serviceValue}
             discountAmount={discountAmount}
             isScanning={isScanning}
             scanError={scanError}
@@ -337,8 +347,10 @@ export default function PatunginApp({ receiptId, initialState }) {
             onPriceChange={setItemPriceInput}
             onSubmit={handleAddItem}
             onRemove={removeItem}
-            onTaxChange={(v) => setTaxPercent(clampNonNegative(v))}
-            onServiceChange={(v) => setServicePercent(clampNonNegative(v))}
+            onTaxModeChange={setTaxMode}
+            onTaxChange={(v) => setTaxValue(clampNonNegative(v))}
+            onServiceModeChange={setServiceMode}
+            onServiceChange={(v) => setServiceValue(clampNonNegative(v))}
             onDiscountChange={(v) => setDiscountAmount(clampNonNegative(v))}
             onNext={goToAssign}
           />
@@ -349,6 +361,8 @@ export default function PatunginApp({ receiptId, initialState }) {
             items={items}
             participants={participants}
             assignments={assignments}
+            splitMode={splitMode}
+            onSplitModeChange={setSplitMode}
             participantNameInput={participantNameInput}
             participantError={participantError}
             onParticipantNameChange={setParticipantNameInput}
@@ -378,12 +392,39 @@ export default function PatunginApp({ receiptId, initialState }) {
 // Sub-Components
 // ==========================================
 
+// Toggle kecil buat milih apakah suatu biaya (pajak/service) dihitung
+// sebagai persentase dari subtotal, atau nominal rupiah tetap — dua-duanya
+// muncul di struk asli tergantung tempatnya.
+function ChargeModeToggle({ mode, onModeChange, label }) {
+  return (
+    <div className="mode-toggle" role="group" aria-label={label}>
+      <button
+        type="button"
+        className={`mode-toggle-btn${mode === "percent" ? " active" : ""}`}
+        aria-pressed={mode === "percent"}
+        onClick={() => onModeChange("percent")}
+      >
+        %
+      </button>
+      <button
+        type="button"
+        className={`mode-toggle-btn${mode === "amount" ? " active" : ""}`}
+        aria-pressed={mode === "amount"}
+        onClick={() => onModeChange("amount")}
+      >
+        Rp
+      </button>
+    </div>
+  );
+}
+
 function ItemsScreen({
   items, itemNameInput, itemPriceInput, itemError,
-  taxPercent, servicePercent, discountAmount,
+  taxMode, taxValue, serviceMode, serviceValue, discountAmount,
   isScanning, scanError, fileInputRef, onScanReceipt,
   onNameChange, onPriceChange, onSubmit, onRemove,
-  onTaxChange, onServiceChange, onDiscountChange, onNext,
+  onTaxModeChange, onTaxChange, onServiceModeChange, onServiceChange,
+  onDiscountChange, onNext,
 }) {
   
   // QA Fix: Mencegah user mengetik simbol minus, 'e', atau '+' pada kolom angka
@@ -468,27 +509,45 @@ function ItemsScreen({
 
       <div className="charges">
         <label>
-          <span>Pajak</span>
+          <div className="charge-label-row">
+            <span>Pajak</span>
+            <ChargeModeToggle mode={taxMode} onModeChange={onTaxModeChange} label="Jenis nilai pajak" />
+          </div>
           <div className="unit-input">
+            {taxMode === "amount" && <span>Rp</span>}
             <input
-              type="number" min="0" max="100" inputMode="numeric"
+              type="number"
+              min="0"
+              max={taxMode === "percent" ? 100 : undefined}
+              inputMode="numeric"
               onKeyDown={blockInvalidNumberChars}
-              value={taxPercent || ""}
+              value={taxValue || ""}
               onChange={(e) => onTaxChange(e.target.value)}
             />
-            <span>%</span>
+            {taxMode === "percent" && <span>%</span>}
           </div>
         </label>
         <label>
-          <span>Service charge</span>
+          <div className="charge-label-row">
+            <span>Service charge</span>
+            <ChargeModeToggle
+              mode={serviceMode}
+              onModeChange={onServiceModeChange}
+              label="Jenis nilai service charge"
+            />
+          </div>
           <div className="unit-input">
+            {serviceMode === "amount" && <span>Rp</span>}
             <input
-              type="number" min="0" max="100" inputMode="numeric"
+              type="number"
+              min="0"
+              max={serviceMode === "percent" ? 100 : undefined}
+              inputMode="numeric"
               onKeyDown={blockInvalidNumberChars}
-              value={servicePercent || ""}
+              value={serviceValue || ""}
               onChange={(e) => onServiceChange(e.target.value)}
             />
-            <span>%</span>
+            {serviceMode === "percent" && <span>%</span>}
           </div>
         </label>
         <label>
@@ -516,18 +575,24 @@ function ItemsScreen({
 
 function AssignScreen({
   items, participants, assignments,
+  splitMode, onSplitModeChange,
   participantNameInput, participantError,
   onParticipantNameChange, onAddParticipant, onRemoveParticipant,
   onToggleAssignment, onBack, onNext,
 }) {
   
   // UX Fix: Hitung otomatis apakah ada item yang belum di-assign (yatim piatu)
+  // — cuma relevan di mode itemized, karena mode equal gak butuh assign sama sekali.
   const unassignedItems = items.filter(
     (item) => !assignments[item.id] || assignments[item.id].size === 0
   );
   
-  // UX Fix: Tombol hanya aktif jika peserta >= 2 dan semua item sudah ada pemiliknya
-  const isReadyToCalculate = participants.length >= 2 && unassignedItems.length === 0 && items.length > 0;
+  // UX Fix: Tombol hanya aktif jika peserta >= 2, dan (kalau mode itemized)
+  // semua item sudah ada pemiliknya. Mode equal cukup ada item + peserta.
+  const isReadyToCalculate =
+    participants.length >= 2 &&
+    items.length > 0 &&
+    (splitMode === "equal" || unassignedItems.length === 0);
 
   return (
     <section aria-labelledby="assign-heading">
@@ -535,6 +600,28 @@ function AssignScreen({
       <p className="sub">
         Tandai siapa saja yang pesan tiap item. Satu item boleh ditandai lebih dari satu orang.
       </p>
+
+      <div className="split-mode-row">
+        <span className="split-mode-label">Cara bagi:</span>
+        <div className="mode-toggle" role="group" aria-label="Cara membagi tagihan">
+          <button
+            type="button"
+            className={`mode-toggle-btn${splitMode === "itemized" ? " active" : ""}`}
+            aria-pressed={splitMode === "itemized"}
+            onClick={() => onSplitModeChange("itemized")}
+          >
+            Sesuai pesanan
+          </button>
+          <button
+            type="button"
+            className={`mode-toggle-btn${splitMode === "equal" ? " active" : ""}`}
+            aria-pressed={splitMode === "equal"}
+            onClick={() => onSplitModeChange("equal")}
+          >
+            Bagi rata
+          </button>
+        </div>
+      </div>
 
       <form className="row-form" onSubmit={onAddParticipant} noValidate>
         <input
@@ -561,38 +648,46 @@ function AssignScreen({
       </div>
       {participants.length < 2 && <p className="empty-note">Tambahkan minimal dua peserta.</p>}
 
-      <div className="assign-list">
-        {items.map((item) => (
-          <div className="assign-item" key={item.id}>
-            <div className="assign-item-head">
-              <span className="name">{item.name}</span>
-              <span className="price">{formatRupiah(item.price)}</span>
+      {splitMode === "equal" ? (
+        <p className="empty-note equal-mode-note">
+          Mode "Bagi rata" aktif — semua item ({items.length}) otomatis dibagi rata ke semua
+          peserta ({participants.length}), gak perlu ditandai satu-satu. Assignment yang udah
+          kamu tandai sebelumnya tetap kesimpen kalau mau balik ke "Sesuai pesanan".
+        </p>
+      ) : (
+        <div className="assign-list">
+          {items.map((item) => (
+            <div className="assign-item" key={item.id}>
+              <div className="assign-item-head">
+                <span className="name">{item.name}</span>
+                <span className="price">{formatRupiah(item.price)}</span>
+              </div>
+              <div className="assign-chips">
+                {participants.length === 0 ? (
+                  <span className="assign-toggle" aria-disabled="true">Tambahkan peserta dulu</span>
+                ) : (
+                  participants.map((p) => {
+                    const selected = assignments[item.id]?.has(p.id);
+                    return (
+                      <button
+                        type="button"
+                        key={p.id}
+                        className={`assign-toggle${selected ? " selected" : ""}`}
+                        onClick={() => onToggleAssignment(item.id, p.id)}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
-            <div className="assign-chips">
-              {participants.length === 0 ? (
-                <span className="assign-toggle" aria-disabled="true">Tambahkan peserta dulu</span>
-              ) : (
-                participants.map((p) => {
-                  const selected = assignments[item.id]?.has(p.id);
-                  return (
-                    <button
-                      type="button"
-                      key={p.id}
-                      className={`assign-toggle${selected ? " selected" : ""}`}
-                      onClick={() => onToggleAssignment(item.id, p.id)}
-                    >
-                      {p.name}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       
-      {/* Pesan Peringatan jika ada item yang belum di-assign */}
-      {participants.length >= 2 && unassignedItems.length > 0 && (
+      {/* Pesan Peringatan jika ada item yang belum di-assign (cuma di mode itemized) */}
+      {splitMode === "itemized" && participants.length >= 2 && unassignedItems.length > 0 && (
         <p className="field-warning">
           Peringatan: {unassignedItems.map((i) => i.name).join(", ")} belum ada yang bayar!
         </p>

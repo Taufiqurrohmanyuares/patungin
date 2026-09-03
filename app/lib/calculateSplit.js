@@ -6,31 +6,66 @@
  * @param {{id:number, name:string, price:number}[]} state.items
  * @param {{id:number, name:string}[]} state.participants
  * @param {Record<number, Set<number>>} state.assignments - itemId -> set of participant ids
- * @param {number} state.taxPercent
- * @param {number} state.servicePercent
+ * @param {"itemized"|"equal"} state.splitMode
+ * @param {number} state.taxValue
+ * @param {"percent"|"amount"} state.taxMode
+ * @param {number} state.serviceValue
+ * @param {"percent"|"amount"} state.serviceMode
  * @param {number} state.discountAmount - flat rupiah amount
  */
+
+/** A charge is either "X% of subtotal" or a flat rupiah amount — never both at once. */
+function resolveChargeAmount(mode, value, subtotal) {
+  const safeValue = Number.isFinite(value) && value > 0 ? value : 0;
+  if (mode === "amount") return safeValue;
+  return subtotal * (safeValue / 100);
+}
+
 export function calculateSplit(state) {
-  const { items, participants, assignments, taxPercent, servicePercent, discountAmount } = state;
+  const {
+    items,
+    participants,
+    assignments,
+    splitMode,
+    taxValue,
+    taxMode,
+    serviceValue,
+    serviceMode,
+    discountAmount,
+  } = state;
 
   const subtotal = items.reduce((sum, i) => sum + i.price, 0);
 
   const rawByParticipant = new Map(participants.map((p) => [p.id, 0]));
-  items.forEach((item) => {
-    const assignees = [...(assignments[item.id] || [])];
-    if (assignees.length === 0) return;
-    const share = item.price / assignees.length;
-    assignees.forEach((pid) => {
-      rawByParticipant.set(pid, (rawByParticipant.get(pid) || 0) + share);
-    });
-  });
 
-  const taxAmount = subtotal * (taxPercent / 100);
-  const serviceAmount = subtotal * (servicePercent / 100);
+  if (splitMode === "equal") {
+    // Semua orang nanggung porsi subtotal yang sama besar, gak peduli
+    // siapa pesan apa. Assignment per-item diabaikan total di mode ini.
+    if (participants.length > 0) {
+      const equalShare = subtotal / participants.length;
+      participants.forEach((p) => rawByParticipant.set(p.id, equalShare));
+    }
+  } else {
+    items.forEach((item) => {
+      const assignees = [...(assignments[item.id] || [])];
+      if (assignees.length === 0) return;
+      const share = item.price / assignees.length;
+      assignees.forEach((pid) => {
+        rawByParticipant.set(pid, (rawByParticipant.get(pid) || 0) + share);
+      });
+    });
+  }
+
+  const taxAmount = resolveChargeAmount(taxMode, taxValue, subtotal);
+  const serviceAmount = resolveChargeAmount(serviceMode, serviceValue, subtotal);
   const clampedDiscount = Math.min(discountAmount, subtotal + taxAmount + serviceAmount);
   const extraTotal = taxAmount + serviceAmount - clampedDiscount;
   const grandTotal = subtotal + taxAmount + serviceAmount - clampedDiscount;
 
+  // Catatan: di mode "equal", setiap peserta punya raw share yang identik,
+  // jadi proportion di bawah ini juga otomatis identik untuk semua orang —
+  // gak perlu logika terpisah buat "bagi rata"-nya pajak/service/diskon,
+  // itu udah otomatis kebagi rata sebagai efek dari raw share yang rata.
   const results = participants.map((p) => {
     const raw = rawByParticipant.get(p.id) || 0;
     const proportion = subtotal > 0 ? raw / subtotal : 0;

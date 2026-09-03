@@ -20,7 +20,21 @@ export async function GET(request, { params }) {
 
 function validatePayload(body) {
   if (!body || typeof body !== "object") return "Payload kosong atau bukan objek.";
-  const { items, participants, assignments, taxPercent, servicePercent, discountAmount } = body;
+  const {
+    items,
+    participants,
+    assignments,
+    splitMode,
+    taxMode,
+    taxValue,
+    serviceMode,
+    serviceValue,
+    discountAmount,
+  } = body;
+
+  if (splitMode !== "itemized" && splitMode !== "equal") {
+    return 'splitMode harus "itemized" atau "equal".';
+  }
 
   if (!Array.isArray(items)) return "items harus berupa array.";
   if (!Array.isArray(participants)) return "participants harus berupa array.";
@@ -45,14 +59,24 @@ function validatePayload(body) {
       return `assignment mengacu ke peserta yang tidak ada: ${a.participantId}.`;
     }
   }
-  for (const [label, value] of [
-    ["taxPercent", taxPercent],
-    ["servicePercent", servicePercent],
-    ["discountAmount", discountAmount],
+
+  for (const [modeLabel, mode, valueLabel, value] of [
+    ["taxMode", taxMode, "taxValue", taxValue],
+    ["serviceMode", serviceMode, "serviceValue", serviceValue],
   ]) {
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-      return `${label} harus angka >= 0.`;
+    if (mode !== "percent" && mode !== "amount") {
+      return `${modeLabel} harus "percent" atau "amount".`;
     }
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      return `${valueLabel} harus angka >= 0.`;
+    }
+    if (mode === "percent" && value > 100) {
+      return `${valueLabel} gak boleh lebih dari 100 kalau modenya persen.`;
+    }
+  }
+
+  if (typeof discountAmount !== "number" || !Number.isFinite(discountAmount) || discountAmount < 0) {
+    return "discountAmount harus angka >= 0.";
   }
   return null;
 }

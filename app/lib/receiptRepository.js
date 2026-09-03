@@ -68,8 +68,11 @@ export async function getReceiptState(receiptId) {
     items: items.map(({ id, name, price }) => ({ id, name, price: Number(price) })),
     participants: participants.map(({ id, name }) => ({ id, name })),
     assignments,
-    taxPercent: Number(receipt.tax_percent),
-    servicePercent: Number(receipt.service_percent),
+    splitMode: receipt.split_mode,
+    taxMode: receipt.tax_mode,
+    taxValue: Number(receipt.tax_value),
+    serviceMode: receipt.service_mode,
+    serviceValue: Number(receipt.service_value),
     discountAmount: Number(receipt.discount_amount),
   };
 }
@@ -81,7 +84,17 @@ export async function getReceiptState(receiptId) {
  */
 export async function saveReceiptState(receiptId, state) {
   assertConfigured();
-  const { items, participants, assignments, taxPercent, servicePercent, discountAmount } = state;
+  const {
+    items,
+    participants,
+    assignments,
+    splitMode,
+    taxMode,
+    taxValue,
+    serviceMode,
+    serviceValue,
+    discountAmount,
+  } = state;
 
   // Sisipkan index posisi sebelum dikirim ke database
   const participantsWithPosition = participants.map((p, index) => ({
@@ -97,8 +110,11 @@ export async function saveReceiptState(receiptId, state) {
   // Panggil fungsi RPC yang sudah kita buat di Supabase SQL Editor
   const { error } = await supabase.rpc("save_receipt_state", {
     p_receipt_id: receiptId,
-    p_tax_percent: taxPercent,
-    p_service_percent: servicePercent,
+    p_split_mode: splitMode,
+    p_tax_mode: taxMode,
+    p_tax_value: taxValue,
+    p_service_mode: serviceMode,
+    p_service_value: serviceValue,
     p_discount_amount: discountAmount,
     p_participants: participantsWithPosition,
     p_items: itemsWithPosition,
