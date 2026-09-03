@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 
 const DEMO_PHASES = ["scan", "assign", "split"];
 
+const STEPS = [
+  { title: "Foto dan baca otomatis", desc: "AI baca item dan harga langsung dari foto struk." },
+  { title: "Assign ke teman", desc: "Tandai siapa pesan apa cukup sekali tap." },
+  { title: "Split adil otomatis", desc: "Pajak dan service charge dibagi proporsional." },
+];
+
 const FEATURES = [
   {
     title: "Scan struk otomatis",
@@ -100,7 +106,6 @@ export default function HomePage() {
               <div className="landing-nav-links">
                 <a href="#fitur">Fitur</a>
                 <a href="#cara-kerja">Cara kerja</a>
-                <a href="#harga">Harga</a>
               </div>
             </div>
             <button className="btn btn-primary" onClick={handleStart} disabled={loading}>
@@ -130,77 +135,84 @@ export default function HomePage() {
               )}
             </div>
 
-            <div
-              className="struk-card"
-              role="group"
-              aria-label="Contoh animasi cara Patungin membagi tagihan"
-              onMouseEnter={() => (pausedRef.current = true)}
-              onMouseLeave={() => (pausedRef.current = false)}
-              onFocus={() => (pausedRef.current = true)}
-              onBlur={() => (pausedRef.current = false)}
-            >
-              <p className="struk-label">
-                {phase === 0 && "Struk dibaca otomatis"}
-                {phase === 1 && "Ditandai siapa pesan apa"}
-                {phase === 2 && "Kebagi otomatis"}
-              </p>
+            <div>
+              <div
+                className="struk-card-wrap"
+                onMouseEnter={() => (pausedRef.current = true)}
+                onMouseLeave={() => (pausedRef.current = false)}
+                onFocus={() => (pausedRef.current = true)}
+                onBlur={() => (pausedRef.current = false)}
+              >
+                <div
+                  className="struk-card"
+                  role="group"
+                  aria-label="Contoh animasi cara Patungin membagi tagihan"
+                >
+                  <p className="struk-label">
+                    {phase === 0 && "Struk dibaca otomatis"}
+                    {phase === 1 && "Ditandai siapa pesan apa"}
+                    {phase === 2 && "Kebagi otomatis"}
+                  </p>
 
-              <div className="struk-phase" key={phase}>
-                {phase === 0 && (
-                  <>
-                    <div className="struk-row">
-                      <span>Nasi goreng</span>
-                      <span>25rb</span>
-                    </div>
-                    <div className="struk-row">
-                      <span>Es teh</span>
-                      <span>8rb</span>
-                    </div>
-                    <div className="struk-total">
-                      <span>Total</span>
-                      <span>33rb</span>
-                    </div>
-                  </>
-                )}
+                  <div className="struk-phase" key={phase}>
+                    {phase === 0 && (
+                      <>
+                        <div className="struk-row">
+                          <span>Nasi goreng</span>
+                          <span>25rb</span>
+                        </div>
+                        <div className="struk-row">
+                          <span>Es teh</span>
+                          <span>8rb</span>
+                        </div>
+                        <div className="struk-total">
+                          <span>Total</span>
+                          <span>33rb</span>
+                        </div>
+                      </>
+                    )}
 
-                {phase === 1 && (
-                  <>
-                    <div className="struk-assign-row">
-                      <span>Nasi goreng</span>
-                      <span className="struk-mini-chip">B</span>
-                    </div>
-                    <div className="struk-assign-row">
-                      <span>Es teh</span>
-                      <span>
-                        <span className="struk-mini-chip">R</span>
-                        <span className="struk-mini-chip">B</span>
-                      </span>
-                    </div>
-                    <div className="struk-total">
-                      <span>Total</span>
-                      <span>33rb</span>
-                    </div>
-                  </>
-                )}
+                    {phase === 1 && (
+                      <>
+                        <div className="struk-assign-row">
+                          <span>Nasi goreng</span>
+                          <span className="struk-mini-chip">B</span>
+                        </div>
+                        <div className="struk-assign-row">
+                          <span>Es teh</span>
+                          <span>
+                            <span className="struk-mini-chip">R</span>
+                            <span className="struk-mini-chip">B</span>
+                          </span>
+                        </div>
+                        <div className="struk-total">
+                          <span>Total</span>
+                          <span>33rb</span>
+                        </div>
+                      </>
+                    )}
 
-                {phase === 2 && (
-                  <>
-                    <div className="struk-summary-row">
-                      <span className="avatar-mini">B</span>
-                      <span className="name">Bima</span>
-                      <span className="amount">29rb</span>
-                    </div>
-                    <div className="struk-summary-row">
-                      <span className="avatar-mini">R</span>
-                      <span className="name">Rani</span>
-                      <span className="amount">4rb</span>
-                    </div>
-                    <div className="struk-total">
-                      <span>Total</span>
-                      <span>33rb</span>
-                    </div>
-                  </>
-                )}
+                    {phase === 2 && (
+                      <>
+                        <div className="struk-summary-row">
+                          <span className="avatar-mini">B</span>
+                          <span className="name">Bima</span>
+                          <span className="amount">29rb</span>
+                        </div>
+                        <div className="struk-summary-row">
+                          <span className="avatar-mini">R</span>
+                          <span className="name">Rani</span>
+                          <span className="amount">4rb</span>
+                        </div>
+                        <div className="struk-total">
+                          <span>Total</span>
+                          <span>33rb</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="struk-tear" aria-hidden="true" />
               </div>
 
               <div className="struk-dots">
@@ -238,47 +250,28 @@ export default function HomePage() {
 
         <div className="landing-steps-zone" id="cara-kerja">
           <h2 className="landing-section-heading">Ubah struk berantakan jadi split yang adil</h2>
-          <p className="landing-section-sub">Tiga langkah, tanpa kalkulator, tanpa drama patungan.</p>
+          <p className="landing-section-sub">Tiga langkah, tanpa kalkulator, tanpa drama patungan. Klik salah satu buat lihat contohnya.</p>
 
-          <div className="landing-steps-grid">
-            <div className="landing-step-card">
-              <p className="landing-step-index">01/</p>
-              <h3 className="landing-step-title">Foto dan baca otomatis</h3>
-              <p className="landing-step-desc">AI baca item dan harga langsung dari foto struk.</p>
-            </div>
-            <div className="landing-step-card featured">
-              <p className="landing-step-index">02/</p>
-              <h3 className="landing-step-title">Assign ke teman</h3>
-              <p className="landing-step-desc">Tandai siapa pesan apa cukup sekali tap.</p>
-            </div>
-            <div className="landing-step-card">
-              <p className="landing-step-index">03/</p>
-              <h3 className="landing-step-title">Split adil otomatis</h3>
-              <p className="landing-step-desc">Pajak dan service charge dibagi proporsional.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="landing-pricing-zone" id="harga">
-          <h2 className="landing-section-heading">Gratis, nggak pakai ribet</h2>
-          <p className="landing-section-sub">Nggak ada tier tersembunyi. Semua orang bisa langsung pakai.</p>
-
-          <div className="pricing-card">
-            <div className="pricing-card-head">
-              <p className="pricing-card-name">Split bill</p>
-              <p className="pricing-card-price">
-                Rp0<span>/sesi</span>
-              </p>
-            </div>
-            <ul className="pricing-list">
-              <li>Item, peserta, dan sesi tanpa batas</li>
-              <li>Pajak &amp; service charge otomatis</li>
-              <li>Link hasil split, bisa dibagikan ke siapa saja</li>
-              <li>Tanpa akun, tanpa kartu kredit</li>
-            </ul>
-            <button className="btn btn-primary pricing-cta" onClick={handleStart} disabled={loading}>
-              {loading ? "Menyiapkan..." : "Coba sekarang"}
-            </button>
+          <div
+            className="landing-steps-grid"
+            onMouseEnter={() => (pausedRef.current = true)}
+            onMouseLeave={() => (pausedRef.current = false)}
+          >
+            {STEPS.map((step, i) => (
+              <button
+                type="button"
+                key={step.title}
+                className={`landing-step-card${phase === i ? " featured" : ""}`}
+                onClick={() => setPhase(i)}
+                onFocus={() => (pausedRef.current = true)}
+                onBlur={() => (pausedRef.current = false)}
+                aria-pressed={phase === i}
+              >
+                <p className="landing-step-index">{String(i + 1).padStart(2, "0")}/</p>
+                <h3 className="landing-step-title">{step.title}</h3>
+                <p className="landing-step-desc">{step.desc}</p>
+              </button>
+            ))}
           </div>
         </div>
 
