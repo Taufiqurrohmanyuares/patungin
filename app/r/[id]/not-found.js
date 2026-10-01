@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Tagihan tidak ditemukan — Porsi",
+};
+
 export default function ReceiptNotFound() {
   return (
     <div className="app">
@@ -20,7 +24,7 @@ export default function ReceiptNotFound() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
           <span className="brand-mark">P</span>
-          Patungin
+          Porsi
         </Link>
       </header>
       <main
@@ -39,7 +43,7 @@ export default function ReceiptNotFound() {
           Link ini mungkin salah ketik, atau sesinya sudah dihapus. Coba mulai sesi baru.
         </p>
         <Link href="/" className="btn btn-primary">
-          Mulai patungan baru
+          Mulai tagihan baru
         </Link>
       </main>
     </div>

@@ -32,9 +32,9 @@ function initialAssignmentsMap(initialState) {
 export default function PatunginApp({ receiptId, initialState }) {
   const [screen, setScreen] = useState("items");
 
-  const [items, setItems] = useState(initialState?.items ?? []); 
-  const [participants, setParticipants] = useState(initialState?.participants ?? []); 
-  const [assignments, setAssignments] = useState(() => initialAssignmentsMap(initialState)); 
+  const [items, setItems] = useState(initialState?.items ?? []);
+  const [participants, setParticipants] = useState(initialState?.participants ?? []);
+  const [assignments, setAssignments] = useState(() => initialAssignmentsMap(initialState));
   const [splitMode, setSplitMode] = useState(initialState?.splitMode ?? "itemized");
 
   const [taxMode, setTaxMode] = useState(initialState?.taxMode ?? "percent");
@@ -85,7 +85,7 @@ export default function PatunginApp({ receiptId, initialState }) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       await new Promise((resolve) => (reader.onload = resolve));
-      
+
       const res = await fetch("/api/receipts/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,9 +96,9 @@ export default function PatunginApp({ receiptId, initialState }) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal memindai struk.");
       }
-      
+
       const { data } = await res.json();
-      
+
       // Injeksi data AI ke dalam state aplikasi
       if (Array.isArray(data) && data.length > 0) {
         const newItems = data.map((item) => ({
@@ -108,7 +108,7 @@ export default function PatunginApp({ receiptId, initialState }) {
         }));
 
         setItems((prev) => [...prev, ...newItems]);
-        
+
         // Inisialisasi set assignment untuk item baru
         setAssignments((prev) => {
           const next = { ...prev };
@@ -123,12 +123,12 @@ export default function PatunginApp({ receiptId, initialState }) {
     } finally {
       setIsScanning(false);
       // Reset input agar bisa memindai file yang sama dua kali berturut-turut
-      if (fileInputRef.current) fileInputRef.current.value = ""; 
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
   // ---------- Auto-save to Supabase (debounced) ----------
-  const [saveStatus, setSaveStatus] = useState("idle"); 
+  const [saveStatus, setSaveStatus] = useState("idle");
   const isFirstRender = useRef(true);
   const abortControllerRef = useRef(null); // Mencegah Race Condition di API
 
@@ -140,7 +140,7 @@ export default function PatunginApp({ receiptId, initialState }) {
     if (!receiptId) return;
 
     setSaveStatus("saving");
-    
+
     // Batalkan request sebelumnya jika user mengetik lagi sebelum 800ms
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -161,7 +161,7 @@ export default function PatunginApp({ receiptId, initialState }) {
         discountAmount,
         splitMode,
       };
-      
+
       try {
         const res = await fetch(`/api/receipts/${receiptId}`, {
           method: "PUT",
@@ -172,7 +172,7 @@ export default function PatunginApp({ receiptId, initialState }) {
         if (!res.ok) throw new Error("save failed");
         setSaveStatus("saved");
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err.name !== "AbortError") {
           setSaveStatus("error");
           console.error("Gagal menyimpan data:", err);
         }
@@ -269,7 +269,7 @@ export default function PatunginApp({ receiptId, initialState }) {
 
   async function handleCopySummary() {
     const lines = [
-      "Ringkasan Patungin",
+      "Ringkasan Porsi",
       ...results.map((r) => `${r.name}: ${formatRupiah(r.rounded)}`),
       `Total: ${formatRupiah(grandTotal)}`,
     ];
@@ -304,7 +304,7 @@ export default function PatunginApp({ receiptId, initialState }) {
             <path d="M15 18l-6-6 6-6" />
           </svg>
           <span className="brand-mark">P</span>
-          Patungin
+          Porsi
         </Link>
         <div className="topbar-actions">
           {/* Visual Feedback untuk Status Auto-Save */}
@@ -426,10 +426,10 @@ function ItemsScreen({
   onTaxModeChange, onTaxChange, onServiceModeChange, onServiceChange,
   onDiscountChange, onNext,
 }) {
-  
+
   // QA Fix: Mencegah user mengetik simbol minus, 'e', atau '+' pada kolom angka
   const blockInvalidNumberChars = (e) => {
-    if (['-', 'e', 'E', '+'].includes(e.key)) {
+    if (["-", "e", "E", "+"].includes(e.key)) {
       e.preventDefault();
     }
   };
@@ -452,9 +452,9 @@ function ItemsScreen({
           style={{ display: "none" }}
           id="camera-input"
         />
-        <button 
-          type="button" 
-          className="btn btn-primary" 
+        <button
+          type="button"
+          className="btn btn-primary"
           onClick={() => fileInputRef.current?.click()}
           disabled={isScanning}
           style={{ width: "100%", padding: "12px", display: "flex", justifyContent: "center", gap: "8px", opacity: isScanning ? 0.7 : 1 }}
@@ -555,7 +555,9 @@ function ItemsScreen({
           <div className="unit-input">
             <span>Rp</span>
             <input
-              type="number" min="0" inputMode="numeric"
+              type="number"
+              min="0"
+              inputMode="numeric"
               onKeyDown={blockInvalidNumberChars}
               value={discountAmount || ""}
               onChange={(e) => onDiscountChange(e.target.value)}
@@ -580,13 +582,13 @@ function AssignScreen({
   onParticipantNameChange, onAddParticipant, onRemoveParticipant,
   onToggleAssignment, onBack, onNext,
 }) {
-  
+
   // UX Fix: Hitung otomatis apakah ada item yang belum di-assign (yatim piatu)
   // — cuma relevan di mode itemized, karena mode equal gak butuh assign sama sekali.
   const unassignedItems = items.filter(
     (item) => !assignments[item.id] || assignments[item.id].size === 0
   );
-  
+
   // UX Fix: Tombol hanya aktif jika peserta >= 2, dan (kalau mode itemized)
   // semua item sudah ada pemiliknya. Mode equal cukup ada item + peserta.
   const isReadyToCalculate =
@@ -685,7 +687,7 @@ function AssignScreen({
           ))}
         </div>
       )}
-      
+
       {/* Pesan Peringatan jika ada item yang belum di-assign (cuma di mode itemized) */}
       {splitMode === "itemized" && participants.length >= 2 && unassignedItems.length > 0 && (
         <p className="field-warning">
@@ -695,10 +697,10 @@ function AssignScreen({
 
       <div className="nav-row">
         <button type="button" className="btn btn-text" onClick={onBack}>Kembali</button>
-        <button 
-          type="button" 
-          className="btn btn-primary" 
-          disabled={!isReadyToCalculate} 
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!isReadyToCalculate}
           onClick={onNext}
           title={!isReadyToCalculate ? "Selesaikan assignment untuk melihat hasil" : ""}
         >
