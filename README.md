@@ -1,4 +1,4 @@
-# Patungin (Next.js + Supabase)
+# porsi (Next.js + Supabase)
 
 Split bill app — assign item ke tiap orang, dan biarkan Patungin hitung
 siapa bayar berapa. Pajak, service charge, dan diskon dibagi **proporsional**
